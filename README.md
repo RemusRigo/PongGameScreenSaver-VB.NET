@@ -39,12 +39,15 @@ See the [User's Guide](Users%20Guide.md) for downloads, runtimes, installation a
 ![VS](https://img.shields.io/badge/IDE-Visual%20Studio-purple)
 <br>
 ![status](https://img.shields.io/badge/status-completed-brightgreen) 
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/RemusRigo/FireworksScreenSaver-VB.NET/total)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/RemusRigo/PongGameScreenSaver-VB.NET/total)
 
 
 
 ## 🗺️ Roadmap
 
+* 2026-11-13: Mod: Changed from expanded monitors to one game per screen
+* 2026-11-13: Add: Show/hide score, player name, center line
+* 2026-11-12: Mod: Changed the logic on how the center dashed line is drawn
 * 2026-11-12: Fix: If ball is moving in a straigth horizontal line, it will get stuck there, so every time the ball touches the paddle it bounces off up or down (just a little)
 * 2026-11-12: Fix: Scale down in the preview
 * 2026-11-12: Mod: Change to one game (form) per screen

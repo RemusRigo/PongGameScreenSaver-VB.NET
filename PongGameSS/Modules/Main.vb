@@ -27,17 +27,34 @@ Module Main
          Case "/p"
             Dim h As IntPtr = ParseHandleArg(args)
             If h <> IntPtr.Zero Then RunPreview(h)
-         Case "/s"
-            RunScreenSaver()
-         Case Else
+         Case Else ' "/s"
             RunScreenSaver()
       End Select
    End Sub
 
    '-----------------------------------------------------------------------------------------------
-   ' RunScreenSaver
+   ' RunScreenSaver: one form (one game) per monitor; when any form closes (key / mouse),
+   ' close all of them and exit
    Private Sub RunScreenSaver()
-      Application.Run(New AppContext())
+      Dim forms As New List(Of frmSS)
+      Dim closing As Boolean = False
+
+      For Each scr As Screen In Screen.AllScreens
+         Dim f As New frmSS() With {.ScreenBounds = scr.Bounds}
+         AddHandler f.FormClosed,
+            Sub(sender, e)
+               If closing Then Return
+               closing = True
+               For Each other As frmSS In forms
+                  If other IsNot sender AndAlso Not other.IsDisposed Then other.Close()
+               Next
+               Application.ExitThread()
+            End Sub
+         forms.Add(f)
+         f.Show()
+      Next
+
+      Application.Run()
    End Sub
 
    '-----------------------------------------------------------------------------------------------

@@ -11,6 +11,7 @@
       <RootNamespace>PongGameSS</RootNamespace>
       <StartupObject>PongGameSS.Main</StartupObject>
       <UseWindowsForms>true</UseWindowsForms>
+      <ApplicationIcon>Res\Paddle and Squares.ico</ApplicationIcon>
    </PropertyGroup>
 
    <PropertyGroup Condition="'$(TargetFramework)' != ''">
@@ -22,6 +23,10 @@
    <PropertyGroup Condition="'$(Platform)' == 'x86' Or '$(Platform)' == 'x64'">
       <PlatformTarget>$(Platform)</PlatformTarget>
    </PropertyGroup>
+
+   <ItemGroup>
+     <Content Include="Res\Paddle and Squares.ico" />
+   </ItemGroup>
 
    <ItemGroup>
       <EmbeddedResource Include="Res\PayPal.png" LogicalName="PayPal.png" />

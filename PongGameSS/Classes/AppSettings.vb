@@ -10,6 +10,11 @@ Public Class AppSettings
 
    Private Const regAppPath As String = "Software\Remus RIGO\PongGameSS.VB-NET"
 
+   Public Property ShowScores As Boolean = True
+   Public Property ShowPlayers As Boolean = True
+   Public Property ShowCenterLine As Boolean = True
+   Public Property Player1Name As String = "Player 1"
+   Public Property Player2Name As String = "Player 2"
    Public Property OneGamePerMonitor As Boolean = False
 
    '-----------------------------------------------------------------------------------------------
@@ -18,6 +23,11 @@ Public Class AppSettings
       Try
          Using key As RegistryKey = Registry.CurrentUser.CreateSubKey(regAppPath)
             If key Is Nothing Then Return
+            key.SetValue(NameOf(ShowScores), ShowScores, RegistryValueKind.DWord)
+            key.SetValue(NameOf(ShowPlayers), ShowPlayers, RegistryValueKind.DWord)
+            key.SetValue(NameOf(ShowCenterLine), ShowCenterLine, RegistryValueKind.DWord)
+            key.SetValue(NameOf(Player1Name), Player1Name, RegistryValueKind.String)
+            key.SetValue(NameOf(Player2Name), Player2Name, RegistryValueKind.String)
             key.SetValue(NameOf(OneGamePerMonitor), OneGamePerMonitor, RegistryValueKind.DWord)
          End Using
       Catch ex As Exception
@@ -31,7 +41,12 @@ Public Class AppSettings
       Try
          Using key As RegistryKey = Registry.CurrentUser.OpenSubKey(regAppPath, False)
             If key Is Nothing Then Return ' Nothing saved yet, keep defaults
-            OneGamePerMonitor = ReadInt(key, NameOf(OneGamePerMonitor), OneGamePerMonitor, 0, 1) = 1
+            ShowScores = key.GetValue(NameOf(ShowScores), ShowScores)
+            ShowPlayers = key.GetValue(NameOf(ShowPlayers), ShowPlayers)
+            ShowCenterLine = key.GetValue(NameOf(ShowCenterLine), ShowCenterLine)
+            Player1Name = Convert.ToString(key.GetValue(NameOf(Player1Name), Player1Name))
+            Player2Name = Convert.ToString(key.GetValue(NameOf(Player2Name), Player2Name))
+            OneGamePerMonitor = key.GetValue(NameOf(OneGamePerMonitor), OneGamePerMonitor)
          End Using
       Catch ex As Exception
          ' Ignore registry errors, keep defaults

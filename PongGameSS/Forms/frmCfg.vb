@@ -1,7 +1,7 @@
 ﻿'--------------------------------------------------------------------------------------------------
 ' PongGameSS: frmCfg.vb
 '    © 2026 Remus Rigo
-'       v1.0.20261112
+'       v1.0.20261113
 '--------------------------------------------------------------------------------------------------
 
 Imports PongGameSS.API
@@ -36,6 +36,11 @@ Public Class frmCfg
    ' Save settings
    Private Sub SaveSettings()
       ' One per monitor = OneGamePerMonitor True, All monitors (virtual screen) = OneGamePerMonitor False
+      cfg.ShowScores = chkBoxShowScores.Checked
+      cfg.ShowPlayers = chkBoxShowPlayers.Checked
+      cfg.ShowCenterLine = chkBoxShowCenterLine.Checked
+      cfg.Player1Name = txtBoxPlayer1.Text.Trim()
+      cfg.Player2Name = txtBoxPlayer2.Text.Trim()
       cfg.OneGamePerMonitor = rbtnPerMon.Checked
       cfg.Save()
    End Sub
@@ -44,6 +49,11 @@ Public Class frmCfg
    ' Load settings
    Private Sub LoadSettings()
       cfg.Load()
+      chkBoxShowScores.Checked = cfg.ShowScores
+      chkBoxShowPlayers.Checked = cfg.ShowPlayers
+      chkBoxShowCenterLine.Checked = cfg.ShowCenterLine
+      txtBoxPlayer1.Text = cfg.Player1Name
+      txtBoxPlayer2.Text = cfg.Player2Name
       rbtnPerMon.Checked = cfg.OneGamePerMonitor
       rbtnAllMon.Checked = Not cfg.OneGamePerMonitor
    End Sub

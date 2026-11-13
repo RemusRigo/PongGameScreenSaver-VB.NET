@@ -9,8 +9,8 @@ Imports PongGameSS.API
 Public Class frmSS
 
    Public PreviewHandle As IntPtr = IntPtr.Zero   ' set by Main for /p
-   Public ScreenBounds As Rectangle = Rectangle.Empty   ' set by AppContext for /s: the area this form covers (screen coords)
-   Public GameArea As Rectangle = Rectangle.Empty       ' where the game is played (client coords); empty = whole client area
+   Public ScreenBounds As Rectangle = Rectangle.Empty   ' set by Main for /s: the monitor this form covers (screen coords)
+   Private GameArea As Rectangle                       ' where the game is played: the whole client area
    Private _isPreview As Boolean = False
    Private _scale As Single = 1.0F                ' < 1 in preview so the game fits the small window
 
@@ -28,11 +28,18 @@ Public Class frmSS
    Private Const BaseMaxBounceSpeedY As Integer = 9
    Private Const BaseCenterLineWidth As Integer = 4
    Private Const BaseScoreFontSize As Single = 48.0F
+   Private Const BasePlayerFontSize As Single = 24.0F
    Private Const BaseScoreTop As Integer = 20
 
    ' Paddle settings
    Private leftPaddle As Rectangle
    Private rightPaddle As Rectangle
+
+   ' Where each paddle tries to hit the ball: pixels from the paddle's center (+ = below center).
+   ' A new random aim for every incoming ball makes the computer players imperfect.
+   Private leftAim As Integer
+   Private rightAim As Integer
+   Private Const MissChance As Double = 0.1   ' chance a paddle aims just past its edge and misses
 
    Private PaddleWidth As Integer
    Private PaddleHeight As Integer
@@ -53,13 +60,13 @@ Public Class frmSS
    Private leftScore As Integer
    Private rightScore As Integer
    Private ScoreFontSize As Single
+   Private PlayerFontSize As Single
    Private ScoreTop As Integer
 
    Private rnd As New Random()
 
    ' Center line
    Private CenterLineWidth As Integer
-   Private seams As New List(Of Integer)   ' X (client coords) where one monitor ends and the next begins
 
    '-----------------------------------------------------------------------------------------------
    ' ApplyScale: size everything for this window (_scale = 1 full screen, ~0.1 in preview).
@@ -77,6 +84,7 @@ Public Class frmSS
       MaxBounceSpeedY = sc(BaseMaxBounceSpeedY)
       CenterLineWidth = sc(BaseCenterLineWidth)
       ScoreFontSize = Math.Max(6.0F, BaseScoreFontSize * _scale)
+      PlayerFontSize = Math.Max(6.0F, BasePlayerFontSize * _scale)
       ScoreTop = sc(BaseScoreTop)
    End Sub
 
@@ -97,22 +105,37 @@ Public Class frmSS
       ' Random direction: left or right, up or down
       ballSpeedX = If(rnd.Next(2) = 0, -BallSpeed, BallSpeed)
       ballSpeedY = If(rnd.Next(2) = 0, -BallSpeed, BallSpeed)
+
+      leftAim = NewAim()
+      rightAim = NewAim()
    End Sub
 
    '-----------------------------------------------------------------------------------------------
-   ' MovePaddle: Move the paddle toward the ball, but never faster than PaddleSpeed
-   ' use ByRef so both paddles can be moved with the same code
-   Private Sub MovePaddle(ByRef paddle As Rectangle)
-      ' Compare the center of the paddle with the center of the ball
-      Dim paddleCenter As Integer = paddle.Y + PaddleHeight \ 2
-      Dim ballCenter As Integer = ball.Y + BallSize \ 2
-
-      ' Move toward the ball, but never faster than PaddleSpeed
-      If ballCenter < paddleCenter - PaddleSpeed Then
-         paddle.Y -= PaddleSpeed
-      ElseIf ballCenter > paddleCenter + PaddleSpeed Then
-         paddle.Y += PaddleSpeed
+   ' NewAim: a random spot on the paddle to hit the ball with. Off-center hits send the ball
+   ' away at steeper angles; sometimes the aim is just past the edge, so the paddle misses.
+   Private Function NewAim() As Integer
+      Dim half As Integer = PaddleHeight \ 2
+      If rnd.NextDouble() < MissChance Then
+         Return If(rnd.Next(2) = 0, -1, 1) * (half + BallSize)
       End If
+      Dim reach As Integer = half * 9 \ 10
+      Return rnd.Next(-reach, reach + 1)
+   End Function
+
+   '-----------------------------------------------------------------------------------------------
+   ' MovePaddle: while the ball is coming, move so it meets the paddle at the aim point;
+   ' otherwise drift back to the middle. Never faster than PaddleSpeed.
+   ' use ByRef so both paddles can be moved with the same code
+   Private Sub MovePaddle(ByRef paddle As Rectangle, aim As Integer, incoming As Boolean)
+      Dim paddleCenter As Integer = paddle.Y + PaddleHeight \ 2
+      Dim target As Integer
+      If incoming Then
+         target = ball.Y + BallSize \ 2 - aim
+      Else
+         target = GameArea.Top + GameArea.Height \ 2
+      End If
+
+      paddle.Y += Math.Max(-PaddleSpeed, Math.Min(PaddleSpeed, target - paddleCenter))
 
       ' Keep the paddle inside the screen
       If paddle.Y < GameArea.Top Then paddle.Y = GameArea.Top
@@ -162,24 +185,22 @@ Public Class frmSS
          ballSpeedY = -ballSpeedY
       End If
 
-      ' Move both paddles toward the ball
-      MovePaddle(leftPaddle)
-      MovePaddle(rightPaddle)
+      ' Move both paddles: the one the ball is heading to chases it
+      MovePaddle(leftPaddle, leftAim, ballSpeedX < 0)
+      MovePaddle(rightPaddle, rightAim, ballSpeedX > 0)
 
-      ' Bounce off the paddles
+      ' Bounce off the paddles; the other paddle picks a new aim for the returning ball
       If ballSpeedX < 0 AndAlso ball.IntersectsWith(leftPaddle) Then
          ball.X = leftPaddle.Right
-         'ballSpeedX = -ballSpeedX
          BounceOffPaddle(leftPaddle, 1)
+         rightAim = NewAim()
       ElseIf ballSpeedX > 0 AndAlso ball.IntersectsWith(rightPaddle) Then
          ball.X = rightPaddle.Left - BallSize
-         'ballSpeedX = -ballSpeedX
          BounceOffPaddle(rightPaddle, -1)
+         leftAim = NewAim()
       End If
 
-      ' The ball got past a paddle: start again from the center
-      ' If ball.Right < 0 OrElse ball.Left > Me.ClientSize.Width Then ResetBall()
-
+      ' The ball got past a paddle: score and start again from the center
       If ball.Right < GameArea.Left Then
          ' Missed by the left paddle: the right side scores
          rightScore += 1
@@ -200,21 +221,14 @@ Public Class frmSS
 
       Dim g As Graphics = e.Graphics
 
-      ' Dashed center line
-      ' If it falls on a seam between two monitors, each monitor would show only part of it,
-      ' so draw it twice: once fully on each side of the seam
-      Using pen As New Pen(Color.Gray, CenterLineWidth)
-         pen.DashStyle = Drawing2D.DashStyle.Dash
-         Dim cx As Integer = GameArea.Left + GameArea.Width \ 2
-         Dim seam As Integer = seams.Find(Function(s) Math.Abs(s - cx) <= CenterLineWidth)
-         If seam <> 0 Then
-            Dim half As Integer = CenterLineWidth \ 2
-            g.DrawLine(pen, seam - half, GameArea.Top, seam - half, GameArea.Bottom)   ' covers seam-4 .. seam-1
-            g.DrawLine(pen, seam + half, GameArea.Top, seam + half, GameArea.Bottom)   ' covers seam   .. seam+3
-         Else
+      ' Center dashed line
+      If cfg.ShowCenterLine Then
+         Using pen As New Pen(Color.Gray, CenterLineWidth)
+            pen.DashStyle = Drawing2D.DashStyle.Dash
+            Dim cx As Integer = GameArea.Left + GameArea.Width \ 2
             g.DrawLine(pen, cx, GameArea.Top, cx, GameArea.Bottom)
-         End If
-      End Using
+         End Using
+      End If
 
       ' Paddles
       g.FillRectangle(Brushes.White, leftPaddle)
@@ -223,12 +237,35 @@ Public Class frmSS
       ' Ball
       g.FillRectangle(Brushes.White, ball)
 
-      ' Scores, centered in each half of the screen
-      Using f As New Font("Consolas", ScoreFontSize, FontStyle.Bold), sf As New StringFormat With {.Alignment = StringAlignment.Center}
-         g.DrawString(leftScore.ToString(), f, Brushes.White, GameArea.Left + GameArea.Width \ 4, GameArea.Top + ScoreTop, sf)
-         g.DrawString(rightScore.ToString(), f, Brushes.White, GameArea.Left + GameArea.Width * 3 \ 4, GameArea.Top + ScoreTop, sf)
-      End Using
+      ' Show scores and player names
+      If cfg.ShowScores AndAlso cfg.ShowPlayers Then
+         ' Player: Score
+         Using f As New Font("Consolas", PlayerFontSize, FontStyle.Bold),
+            sfL As New StringFormat With {.Alignment = StringAlignment.Near},
+            sfR As New StringFormat With {.Alignment = StringAlignment.Far}
 
+            g.DrawString($"{cfg.Player1Name}: {leftScore}", f, Brushes.White, GameArea.Left + PaddleMargin + PaddleWidth, GameArea.Top + ScoreTop, sfL)
+            g.DrawString($"{cfg.Player2Name}: {rightScore}", f, Brushes.White, GameArea.Right - PaddleMargin - PaddleWidth, GameArea.Top + ScoreTop, sfR)
+         End Using
+      Else
+         If cfg.ShowScores Then
+            ' Show scores
+            Using f As New Font("Consolas", ScoreFontSize, FontStyle.Bold), sf As New StringFormat With {.Alignment = StringAlignment.Center}
+               g.DrawString(leftScore.ToString(), f, Brushes.White, GameArea.Left + GameArea.Width \ 4, GameArea.Top + ScoreTop, sf)
+               g.DrawString(rightScore.ToString(), f, Brushes.White, GameArea.Left + GameArea.Width * 3 \ 4, GameArea.Top + ScoreTop, sf)
+            End Using
+         End If
+         If cfg.ShowPlayers Then
+            ' Show Player names
+            Using f As New Font("Consolas", PlayerFontSize, FontStyle.Bold),
+            sfL As New StringFormat With {.Alignment = StringAlignment.Near},
+            sfR As New StringFormat With {.Alignment = StringAlignment.Far}
+
+               g.DrawString(cfg.Player1Name, f, Brushes.White, GameArea.Left + GameArea.Width \ 4, GameArea.Top + ScoreTop, sfL)
+               g.DrawString(cfg.Player2Name, f, Brushes.White, GameArea.Left + GameArea.Width * 3 \ 4, GameArea.Top + ScoreTop, sfR)
+            End Using
+         End If
+      End If
    End Sub
 
    '-----------------------------------------------------------------------------------------------
@@ -262,8 +299,7 @@ Public Class frmSS
          ' Keep the same proportions as full screen
          _scale = CSng(Me.ClientSize.Height / Screen.PrimaryScreen.Bounds.Height)
       Else
-         ' Full screen: cover the area assigned by AppContext (one monitor, or the whole
-         ' virtual screen when OneGamePerMonitor is False); primary monitor if none
+         ' Full screen: cover the monitor assigned by Main (primary monitor if none)
          ' set bounds after StartPosition, so it doesn't get overridden
          Me.WindowState = FormWindowState.Normal
          Me.Bounds = If(ScreenBounds.IsEmpty, Screen.PrimaryScreen.Bounds, ScreenBounds)
@@ -275,16 +311,8 @@ Public Class frmSS
          Cursor.Hide()
       End If
 
-      ' Play in the whole client area unless AppContext gave a smaller area (spanning mode)
-      If GameArea.IsEmpty Then GameArea = New Rectangle(Point.Empty, Me.ClientSize)
-
-      ' Monitor seams inside this form (only when it spans more than one monitor)
-      If Not _isPreview Then
-         For Each scr As Screen In Screen.AllScreens
-            Dim x As Integer = scr.Bounds.Left - Me.Bounds.Left
-            If x > 0 AndAlso x < Me.ClientSize.Width Then seams.Add(x)
-         Next
-      End If
+      ' Play in the whole client area
+      GameArea = New Rectangle(Point.Empty, Me.ClientSize)
 
       tmr.Interval = 16 ' approximately 60 FPS
       ApplyScale()
@@ -301,8 +329,8 @@ Public Class frmSS
 
    '-----------------------------------------------------------------------------------------------
    ' frmSS: DpiChanged
-   ' Each form is created on the primary monitor and then moved to its own monitor (or spans all
-   ' monitors). With mixed scaling (e.g. 100% + 150%) Windows sends DpiChanged and WinForms would
+   ' Each form is created on the primary monitor and then moved to its own monitor.
+   ' With mixed scaling (e.g. 100% + 150%) Windows sends DpiChanged and WinForms would
    ' rescale/move the form. Cancel that and keep covering exactly this form's area.
    Private Sub frmSS_DpiChanged(sender As Object, e As DpiChangedEventArgs) Handles MyBase.DpiChanged
       If _isPreview Then Return
