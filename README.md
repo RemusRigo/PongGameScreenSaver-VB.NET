@@ -30,16 +30,20 @@ See the [User's Guide](Users%20Guide.md) for downloads, runtimes, installation a
 
 ## 🛠️ Statistics
 
-![VB.NET](https://img.shields.io/badge/Language-VB.NET-blue)
+![Lang](https://img.shields.io/badge/Language-VB.NET-blue)
+<br>
 ![API](https://img.shields.io/badge/API-User32-lightblue)
 ![API](https://img.shields.io/badge/API-Registry-lightblue)
+<br>
 ![RUNTIME](https://img.shields.io/badge/Runtime-.NET%204.8-lightblue)
 ![RUNTIME](https://img.shields.io/badge/Runtime-.NET%208.0-lightblue)
 ![RUNTIME](https://img.shields.io/badge/Runtime-.NET%2010.0-lightblue)
-![VS](https://img.shields.io/badge/IDE-Visual%20Studio-purple)
+<br>
+![IDE](https://img.shields.io/badge/IDE-Visual%20Studio-purple)
 <br>
 ![status](https://img.shields.io/badge/status-completed-brightgreen) 
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/RemusRigo/PongGameScreenSaver-VB.NET/total)
+<br>
+![Downloads](https://img.shields.io/github/downloads/RemusRigo/PongGameScreenSaver-VB.NET/total)
 
 
 
