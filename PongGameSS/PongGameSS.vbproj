@@ -1,18 +1,19 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-   <PropertyGroup>
-      <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-      <ApplicationManifest>app.manifest</ApplicationManifest>
-      <AssemblyName>PongGameSS</AssemblyName>
-      <MyType>WindowsForms</MyType>
-      <OutputType>WinExe</OutputType>
-      <Platforms>x86;x64;ARM64</Platforms>
-      <TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
-      <RootNamespace>PongGameSS</RootNamespace>
-      <StartupObject>PongGameSS.Main</StartupObject>
-      <UseWindowsForms>true</UseWindowsForms>
-      <ApplicationIcon>Res\Paddle and Squares.ico</ApplicationIcon>
-   </PropertyGroup>
+<PropertyGroup>
+   <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+   <ApplicationManifest>app.manifest</ApplicationManifest>
+   <AssemblyName>PongGameSS</AssemblyName>
+   <MyType>WindowsForms</MyType>
+   <OutputType>WinExe</OutputType>
+   <Platforms>x86;x64;ARM64</Platforms>
+   <TargetFrameworks>net48;net8.0-windows;net10.0-windows</TargetFrameworks>
+   <TargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">net10.0-windows</TargetFrameworks>
+   <RootNamespace>PongGameSS</RootNamespace>
+   <StartupObject>PongGameSS.Main</StartupObject>
+   <UseWindowsForms>true</UseWindowsForms>
+   <ApplicationIcon>Res\Paddle and Squares.ico</ApplicationIcon>
+</PropertyGroup>
 
    <PropertyGroup Condition="'$(TargetFramework)' != ''">
       <TfmName>$(TargetFramework.Replace('-windows', ''))</TfmName>

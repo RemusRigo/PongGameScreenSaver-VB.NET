@@ -45,6 +45,7 @@ See the [User's Guide](Users%20Guide.md) for downloads, runtimes, installation a
 
 ## 🗺️ Roadmap
 
+* 2026-11-27: Fix: IDE error for multiple frameworks
 * 2026-11-13: Mod: Changed from expanded monitors to one game per screen
 * 2026-11-13: Add: Show/hide score, player name, center line
 * 2026-11-12: Mod: Changed the logic on how the center dashed line is drawn
